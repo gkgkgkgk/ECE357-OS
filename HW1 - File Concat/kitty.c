@@ -55,10 +55,10 @@ void concat(int *outputFile, char *inputFile)
     char buf[BUF_SIZE];
     int fd = strcmp(inputFile, "-") == 0 ? STDIN_FILENO : mySyscall(open(inputFile, O_RDONLY, 0666), inputFile, "open");
     int r = mySyscall(read(fd, buf, BUF_SIZE), inputFile, "read");
-    bool isBinary = false;
-    int writeCount = 0;
     int readCount = 1;
+    int writeCount = 0;
     int bytesWritten = 0;
+    bool isBinary = false;
 
     while (r > 0)
     {

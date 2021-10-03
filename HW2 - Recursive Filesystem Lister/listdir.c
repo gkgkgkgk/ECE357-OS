@@ -51,7 +51,7 @@ void convertFileMode(int mode, char *fileMode)
     else
     {
         type = "?";
-        fprintf(stderr, "Error! File type is unkown.\n");
+        fprintf(stderr, "Error! File type is unkmown.\n");
     }
 
     strcpy(fileMode, type);

@@ -101,7 +101,16 @@ void printFile(struct stat *sb, char *path)
     char *lastModified = malloc(80);
     strftime(lastModified, 80, "%b %e %H:%M", localtime(&sb->st_mtime));
 
-    printf("    %lu %6lu %s %3lu %-8s %-8s %8lu %s %s\n", sb->st_ino, sb->st_blocks / blockSize, fileMode, sb->st_nlink, owner, fileGroup, fileSize, lastModified, path);
+    int isSymlink = 0;
+    char *symbuf = malloc(sb->st_size + 1);
+    if (S_ISLNK(fileModeInt))
+    {
+        readlink(path, symbuf, sb->st_size + 1);
+        isSymlink = 1;
+        symbuf[sb->st_size] = '\0';
+    }
+
+    printf("    %lu %6lu %s %3lu %-8s %-8s %8lu %s %s %s %s\n", sb->st_ino, sb->st_blocks / blockSize, fileMode, sb->st_nlink, owner, fileGroup, fileSize, lastModified, path, isSymlink ? "->" : "", isSymlink ? symbuf : "");
 }
 
 void listdir(char *path)

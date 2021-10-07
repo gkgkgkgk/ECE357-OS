@@ -58,12 +58,27 @@ void convertFileMode(int mode, char *fileMode)
     strcat(fileMode, (mode & S_IRUSR) ? "r" : "-");
     strcat(fileMode, (mode & S_IWUSR) ? "w" : "-");
     strcat(fileMode, (mode & S_IXUSR) ? "x" : "-");
+
+    if (mode & S_ISUID)
+    {
+        fileMode[3] = ((mode & S_IXUSR) ? 's' : 'S');
+    }
+
     strcat(fileMode, (mode & S_IRGRP) ? "r" : "-");
     strcat(fileMode, (mode & S_IWGRP) ? "w" : "-");
     strcat(fileMode, (mode & S_IXGRP) ? "x" : "-");
+    if (mode & S_ISGID)
+    {
+        fileMode[6] = ((mode & S_IXGRP) ? 's' : 'l');
+    }
+
     strcat(fileMode, (mode & S_IROTH) ? "r" : "-");
     strcat(fileMode, (mode & S_IWOTH) ? "w" : "-");
     strcat(fileMode, (mode & S_IXOTH) ? "x" : "-");
+    if (mode & S_ISVTX)
+    {
+        fileMode[3] = ((mode & S_IXOTH) ? 't' : 'T');
+    }
 }
 
 void printFile(struct stat *sb, char *path)
@@ -164,4 +179,5 @@ int main(int argc, char *argv[])
 /* references:
 https://www.gnu.org/software/findutils/manual/html_node/find_html/Print-File-Information.html
 https://www.gnu.org/software/libc/manual/html_node/Testing-File-Type.html
+https://www.gnu.org/software/findutils/manual/html_node/find_html/Type.html
 */

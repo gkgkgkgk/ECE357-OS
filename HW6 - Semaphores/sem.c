@@ -5,11 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 
-void handler(int signum){
+void handler(int signum)
+{
     return;
 }
 
-void sem_init(struct sem* s, int count){
+void sem_init(struct sem *s, int count)
+{
     s->count = count;
     s->spinlock = 0;
     int i;
@@ -18,12 +20,13 @@ void sem_init(struct sem* s, int count){
     memset(s->woken_count, 0, N_PROC);
 }
 
-
-int sem_try(struct sem* s){
+int sem_try(struct sem *s)
+{
     int val = 0;
     spin_lock(&s->spinlock);
 
-    if(s->count > 0 && s->spinlock == 0){
+    if (s->count > 0)
+    {
         s->count--;
         val = 1;
     }
@@ -32,43 +35,47 @@ int sem_try(struct sem* s){
     return val;
 }
 
-
-void sem_wait(struct sem *s, int my_procnum){
-    while(1){
+void sem_wait(struct sem *s, int my_procnum)
+{
+    while (1)
+    {
         spin_lock(&s->spinlock);
-        if(s->count > 0){
+        if (s->count > 0)
+        {
             s->count--;
             spin_unlock(&s->spinlock);
             return;
         }
 
         s->sleeping[my_procnum] = getpid();
-        
-        s->sleep_count[my_procnum]++;
 
-        sigset_t newmask,oldmask;
+        sigset_t newmask, oldmask;
         sigfillset(&newmask);
         signal(SIGUSR1, handler);
-        sigprocmask(SIG_BLOCK,&newmask,&oldmask);
+        sigprocmask(SIG_BLOCK, &newmask, &oldmask);
         spin_unlock(&s->spinlock);
+        s->sleep_count[my_procnum]++;
         sigsuspend(&oldmask);
 
-        sigprocmask(SIG_UNBLOCK,&newmask,&oldmask);
+        sigprocmask(SIG_UNBLOCK, &newmask, &oldmask);
         signal(SIGUSR1, SIG_DFL);
         s->sleeping[my_procnum] = 0;
         s->handle_count[my_procnum]++;
-        s->woken_count[my_procnum]++;
     }
 }
 
-
-void sem_inc(struct sem *s){
+void sem_inc(struct sem *s)
+{
     spin_lock(&s->spinlock);
     s->count++;
-    if(s->count > 0){
+    if (s->count > 0)
+    {
         int i;
-        for(i = 0; i < N_PROC; i++){
-            if(s->sleeping[i] != 0){
+        for (i = 0; i < N_PROC; i++)
+        {
+            if (s->sleeping[i] != 0)
+            {
+                s->woken_count[i]++;
                 kill(s->sleeping[i], SIGUSR1);
                 s->sleeping[i] = 0;
             }

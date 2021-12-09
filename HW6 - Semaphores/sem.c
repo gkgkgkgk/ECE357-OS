@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 void handler(int signum){
-    // increment something
     return;
 }
 
@@ -35,30 +34,31 @@ int sem_try(struct sem* s){
 
 
 void sem_wait(struct sem *s, int my_procnum){
-    spin_lock(&s->spinlock);
-    if(s->count > 0){
-        s->count--;
+    while(1){
+        spin_lock(&s->spinlock);
+        if(s->count > 0){
+            s->count--;
+            spin_unlock(&s->spinlock);
+            return;
+        }
+
+        s->sleeping[my_procnum] = getpid();
+        
+        s->sleep_count[my_procnum]++;
+
+        sigset_t newmask,oldmask;
+        sigfillset(&newmask);
+        signal(SIGUSR1, handler);
+        sigprocmask(SIG_BLOCK,&newmask,&oldmask);
         spin_unlock(&s->spinlock);
-        return;
+        sigsuspend(&oldmask);
+
+        sigprocmask(SIG_UNBLOCK,&newmask,&oldmask);
+        signal(SIGUSR1, SIG_DFL);
+        s->sleeping[my_procnum] = 0;
+        s->handle_count[my_procnum]++;
+        s->woken_count[my_procnum]++;
     }
-
-    s->sleeping[my_procnum] = getpid();
-    
-    s->sleep_count[my_procnum]++;
-
-    sigset_t newmask,oldmask;
-    sigfillset(&newmask);
-    signal(SIGUSR1, handler);
-    sigprocmask(SIG_BLOCK,&newmask,&oldmask);
-    spin_unlock(&s->spinlock);
-    sigsuspend(&oldmask);
-
-    sigprocmask(SIG_UNBLOCK,&newmask,&oldmask);
-    signal(SIGUSR1, SIG_DFL);
-    s->sleeping[my_procnum] = 0;
-    s->woken_count[my_procnum]++;
-
-    return sem_wait(s, my_procnum);
 }
 
 

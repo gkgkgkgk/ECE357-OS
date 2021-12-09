@@ -11,13 +11,6 @@
 #define SHELL_COUNT 3
 #define TASK_COUNT 6
 
-void assignShell(int* fromShell, int* toShell){
-    *toShell = (*toShell + 1)%SHELL_COUNT;
-    if(*toShell == 0) *fromShell = (*fromShell + 1)%SHELL_COUNT;
-    if(*fromShell == *toShell) return assignShell(fromShell, toShell);
-}
-
-
 int main(int argc, char* argv[]){
 
     int rockCount = 1;
@@ -33,17 +26,19 @@ int main(int argc, char* argv[]){
         sem_init(shells+i,rockCount);
     }
 
-    int p;
+
     int pid = getpid();
-    int fpid;
-    printf("Parent PID: %d\n", pid);
-    int my_procnum = 0;
+    
+    // parent variables
     int children_pid[TASK_COUNT];
-    int fromShell = 0, toShell = 0;
+    
+    // child variables
+    int my_procnum = 0;
+    int my_pid;    
+    int fromShells[] = {0, 0, 1, 1, 2, 2};
+    int toShells[] = {1, 2, 0, 2, 0, 1};
 
     for(i = 0; i < TASK_COUNT && pid != 0; i++){
-        assignShell(&fromShell, &toShell);
-        // printf("%d: %d -> %d\n", i+1, fromShell, toShell);
         pid = fork();
         switch(pid){
             case -1:
@@ -52,8 +47,8 @@ int main(int argc, char* argv[]){
 
             case 0:
                 my_procnum = i+1;
-                int p = getpid();
-                fprintf(stderr, "VCPU %d starting, pid %d\n", my_procnum, p);
+                my_pid = getpid();
+                fprintf(stderr, "VCPU %d starting, pid %d\n", my_procnum, my_pid);
                 break;
 
             default:
@@ -67,12 +62,12 @@ int main(int argc, char* argv[]){
             // printf("CHILD %d: About to move from shell %d count: %d ", my_procnum, fromShell, shells[fromShell].count);
             // printf("to shell %d count: %d\n", toShell, shells[toShell].count);
             
-            if(sem_try(shells+fromShell) == 1){ // successfully removed a shell
-                sem_inc(shells + toShell);
+            if(sem_try(shells+fromShells[my_procnum-1]) == 1){ // successfully removed a shell
+                sem_inc(shells + toShells[my_procnum-1]);
             }
             else{
-                sem_wait(shells + fromShell, my_procnum);
-                sem_inc(shells + toShell);
+                sem_wait(shells + fromShells[my_procnum-1], my_procnum);
+                sem_inc(shells + toShells[my_procnum-1]);
             }
 
             // printf("CHILD %d: Moved from shell %d count: %d ", my_procnum, fromShell, shells[fromShell].count);
@@ -89,7 +84,7 @@ int main(int argc, char* argv[]){
         for(i = 0; i < SHELL_COUNT; i++){
             printf("\nShell #%d Count: %d\n", i+1, shells[i].count);
             for(j = 0; j < TASK_COUNT; j++){
-                printf("VCPU %d: sleeps: %d wakes: %d\n", j+1, shells[i].sleep_count[j+1], shells[i].woken_count[j+1]);
+                printf("VCPU %d: sleeps: %d wakes: %d handlers: %d\n", j+1, shells[i].sleep_count[j+1], shells[i].woken_count[j+1], shells[i].handle_count[j+1]);
             }
             printf("\n");
         }

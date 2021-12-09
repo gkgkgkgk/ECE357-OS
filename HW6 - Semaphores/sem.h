@@ -10,6 +10,7 @@ struct sem{
     int sleeping[N_PROC];
     int sleep_count[N_PROC];
     int woken_count[N_PROC];
+    int handle_count[N_PROC];
 };
 
 void sem_init(struct sem* s, int count);

@@ -45,12 +45,12 @@ void sem_wait(struct sem *s, int my_procnum){
     s->sleeping[my_procnum] = getpid();
     
     s->sleep_count[my_procnum]++;
-    spin_unlock(&s->spinlock);
 
     sigset_t newmask,oldmask;
     sigfillset(&newmask);
     signal(SIGUSR1, handler);
     sigprocmask(SIG_BLOCK,&newmask,&oldmask);
+    spin_unlock(&s->spinlock);
     sigsuspend(&oldmask);
 
     sigprocmask(SIG_UNBLOCK,&newmask,&oldmask);
